@@ -105,6 +105,21 @@ def kadai4(org: pg.Rect, dst: pg.Rect, current_xy: tuple[float, float]) -> tuple
     return vx, vy
 
 
+def kadai2():
+    """
+    大きさの異なる爆弾Surfaceのリストと加速度のリストを返す
+    """
+    bb_imgs = []
+    bb_accs = []
+    for r in range(1, 11):
+        bb_img = pg.Surface((20 * r, 20 * r))
+        pg.draw.circle(bb_img, (255, 0, 0), (10 * r, 10 * r), 10 * r)
+        bb_img.set_colorkey((0, 0, 0)) # 黒色を透過
+        bb_imgs.append(bb_img)
+        bb_accs.append(r)
+    return bb_imgs, bb_accs
+
+
 
 
 
@@ -117,6 +132,11 @@ def main():
     kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)
     kk_rct = kk_img.get_rect()
     kk_rct.center = 300, 200
+
+    #課題２ 爆弾画像のリストと加速度リストを取得
+    bb_imgs, bb_accs = kadai2()
+
+
     bb_img = pg.Surface((20,20))
     pg.draw.circle(bb_img, (255,0,0),(10,10),10)
     bb_img.set_colorkey((0,0,0))
@@ -165,20 +185,42 @@ def main():
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1])  
         screen.blit(kk_img, kk_rct)
 
+
+        #課題２　500フレームごとにレベルアップ、最大9レベル
+        idx = min(tmr // 500, 9)
+
+        #課題２画像と加速度を選択
+        bb_img = bb_imgs[idx]
+        acc = bb_accs[idx]
+
+
+        #課題２Rectのサイズを更新
+        bb_rct.width = bb_img.get_width()
+        bb_rct.height = bb_img.get_height()
+
+
         #課題４
         # 1. まず速度ベクトルを計算・更新する
         vx, vy = kadai4(bb_rct, kk_rct, (vx, vy))
 
-        # 2. その速度で移動させる
-        bb_rct.move_ip(vx, vy)
 
-        # 3. 壁に当たった時の反射（距離が近く慣性移動している時に必要）
+        #課題２加速度(acc)を掛けて実際の移動量(avx, avy)を算出
+        avx = vx * acc
+        avy = vy * acc
+
+        #課題２
+        # 2. 速度の調整をする
+        bb_rct.move_ip(avx, avy)
+
+        # 3. 壁に当たった時の反射
         yoko, tate = check_bound(bb_rct)
         if not yoko:  
             vx *= -1
         if not tate:  
             vy *= -1
-        bb_rct.move_ip(vx, vy)
+
+
+        #bb_rct.move_ip(vx, vy)
         screen.blit(bb_img, bb_rct)
         pg.display.update()
         tmr += 1
