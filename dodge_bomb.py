@@ -3,6 +3,7 @@ import random
 import sys
 import pygame as pg
 import time #課題１
+import math #課題４
 
 
 WIDTH, HEIGHT = 1100, 650
@@ -31,16 +32,17 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
     return yoko, tate
 
 
-def kadai1(screen: pg.Surface) -> None:
+ #課題１
+def kadai1(screen: pg.Surface) -> None:   
     """
     ゲームオーバー時に画面をブラックアウトし、
     「Game Over」と泣いているこうかとんを表示する関数
     """
-    # 1. 黒い矩形を描画するための空のSurfaceを作り、黒で塗りつぶす
+    # 1. 黒のSurfaceを作り、黒で塗りつぶす
     black_scr = pg.Surface((WIDTH, HEIGHT))
     black_scr.fill((0, 0, 0))
     
-    # 2. 1のSurfaceの透明度を設定する（半透明）
+    # 2. 1の透明度を設定する（半透明）
     black_scr.set_alpha(200)
     
     # 3. 白文字でGame Overと書かれたフォントSurfaceを作り、1のSurfaceにblitする
@@ -51,12 +53,12 @@ def kadai1(screen: pg.Surface) -> None:
     black_scr.blit(txt_img, txt_rct)
 
     # 4. こうかとん画像をロードし、こうかとんSurfaceを作り、1のSurfaceにblitする
-    # ※fig/6.pngに変更
+    # ※画像変更
     try:
         kk_img = pg.image.load("fig/6.png")
         kk_img = pg.transform.rotozoom(kk_img, 0, 0.9)
         
-        # 文字の左右に配置（画像参照）
+        # 文字の左右にこうかとんを表示
         kk_rct_left = kk_img.get_rect()
         kk_rct_left.midright = (txt_rct.left - 20, txt_rct.centery)
         black_scr.blit(kk_img, kk_rct_left)
@@ -73,6 +75,38 @@ def kadai1(screen: pg.Surface) -> None:
     # 6. pg.display.update()したら，5秒表示する
     pg.display.update()
     time.sleep(5)
+
+
+#課題４
+def kadai4(org: pg.Rect, dst: pg.Rect, current_xy: tuple[float, float]) -> tuple[float, float]:
+    """
+    orgから見てdstがある方向への速度ベクトルを計算する
+    距離が300未満の場合は、現在の速度（慣性）をそのまま返す
+    """
+    # 差を求める
+    diff_x = dst.centerx - org.centerx
+    diff_y = dst.centery - org.centery
+
+    # 距離を計算
+    norm = math.sqrt(diff_x**2 + diff_y**2)
+
+    # 距離が500未満なら、慣性として現在の速度を返す
+    if norm < 500:
+        return current_xy
+    
+    # 正規化して速度を計算
+    if norm == 0:
+        return current_xy
+    
+    mag = math.sqrt(50) # 移動速度（約7.07）
+    vx = (diff_x / norm) * mag
+    vy = (diff_y / norm) * mag
+    
+    return vx, vy
+
+
+
+
 
 
 
@@ -130,6 +164,15 @@ def main():
         if check_bound(kk_rct) != (True, True):  
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1])  
         screen.blit(kk_img, kk_rct)
+
+        #課題４
+        # 1. まず速度ベクトルを計算・更新する
+        vx, vy = kadai4(bb_rct, kk_rct, (vx, vy))
+
+        # 2. その速度で移動させる
+        bb_rct.move_ip(vx, vy)
+
+        # 3. 壁に当たった時の反射（距離が近く慣性移動している時に必要）
         yoko, tate = check_bound(bb_rct)
         if not yoko:  
             vx *= -1
@@ -142,13 +185,6 @@ def main():
         clock.tick(50)
 
 
-
-        screen.blit(kk_img, kk_rct)
-        bb_rct.move_ip(vx, vy)
-        screen.blit(bb_img, bb_rct)
-        pg.display.update()
-        tmr += 1
-        clock.tick(50)
 
 
 if __name__ == "__main__":
